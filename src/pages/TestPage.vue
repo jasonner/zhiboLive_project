@@ -1,0 +1,10 @@
+<template>
+  <div style="padding: 20px;">
+    <h1>测试页面</h1>
+    <p>如果你能看到这个页面，说明路由工作正常。</p>
+  </div>
+</template>
+
+<script setup lang="ts">
+</script>
+

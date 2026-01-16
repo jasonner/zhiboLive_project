@@ -1,0 +1,33 @@
+{
+  "name": "zhibo-live",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "教师教学直播间前端项目",
+  "scripts": {
+    "dev": "vite",
+    "dev:https": "vite --https",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "cert": "node scripts/generate-cert.js"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "axios": "^1.13.2",
+    "element-plus": "^2.4.4",
+    "fabric": "^5.3.0",
+    "flv.js": "^1.6.2",
+    "pdfjs-dist": "^3.0.279",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.0",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "@vue/eslint-config-typescript": "^12.0.0",
+    "sass": "^1.69.5",
+    "typescript": "^5.3.3",
+    "vite": "^4.5.2",
+    "vue-tsc": "^1.8.25"
+  }
+}
