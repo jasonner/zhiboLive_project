@@ -319,17 +319,27 @@ onMounted(async () => {
                 name: existingStudent.name
               })
               
-              // 清理旧的连接（如果存在）
+              // 重要：在学生重新加入时，无论旧连接状态如何，都先清理旧连接
+              // 这样可以避免同时存在多个连接导致数据混乱
               const oldManager = studentRtcManagers.get(studentId)
               if (oldManager) {
                 const pc = oldManager.getPeerConnection()
-                // 检查连接状态，如果已断开或关闭，清理旧连接
-                if (pc && (pc.connectionState === 'closed' || pc.connectionState === 'disconnected' || pc.connectionState === 'failed')) {
-                  console.log(`[TeacherRoom] 检测到学生 ${studentId} 的旧连接已断开，清理旧连接`)
+                if (pc) {
+                  const connectionState = pc.connectionState
+                  const signalingState = pc.signalingState
+                  console.log(`[TeacherRoom] 检测到学生 ${studentId} 的旧连接，状态:`, {
+                    connectionState,
+                    signalingState
+                  })
+                  
+                  // 无论连接状态如何，都清理旧连接，确保创建新连接时不会混乱
+                  console.log(`[TeacherRoom] 清理学生 ${studentId} 的旧连接，准备创建新连接`)
                   removeStudentRtcManager(studentId)
-                } else if (pc && pc.signalingState === 'stable' && pc.connectionState === 'new') {
-                  // 如果连接状态是 stable 但 connectionState 是 new，说明可能没有成功建立连接，也清理
-                  console.log(`[TeacherRoom] 检测到学生 ${studentId} 的旧连接状态异常，清理旧连接`)
+                  
+                  // 等待一下，确保旧连接完全关闭
+                  await new Promise(resolve => setTimeout(resolve, 100))
+                } else {
+                  // 如果没有 PeerConnection，直接清理
                   removeStudentRtcManager(studentId)
                 }
               }
@@ -348,7 +358,8 @@ onMounted(async () => {
               }
               
               // 发送媒体流 Offer（为每个学生创建独立的连接）
-              if (localStream.value && signalService) {
+              // 检查是否有摄像头流或屏幕共享流
+              if ((localStream.value || screenStream.value) && signalService) {
                 try {
                   console.log('[TeacherRoom] 为已存在的学生创建 Offer（可能是刷新后重新加入）:', data.userId)
                   // 获取或创建该学生的 RTCManager（如果已清理旧连接，这里会创建新的）
@@ -367,9 +378,13 @@ onMounted(async () => {
                   }
                   
                   const offer = await studentManager.createOffer()
-                  // 摄像头流的 Offer，传入 'camera' 类型
-                  signalService.sendOffer(studentId, offer, 'camera')
-                  console.log('[TeacherRoom] 已向已存在的学生发送摄像头流的 Offer:', data.userId)
+                  // 根据当前状态决定 streamType：如果有屏幕共享，使用 'screen'，否则使用 'camera'
+                  const streamType = screenStream.value ? 'screen' : 'camera'
+                  signalService.sendOffer(studentId, offer, streamType)
+                  console.log(`[TeacherRoom] 已向已存在的学生发送${streamType}流的 Offer:`, data.userId, {
+                    hasCamera: !!localStream.value,
+                    hasScreen: !!screenStream.value
+                  })
                 } catch (error) {
                   console.error('[TeacherRoom] 创建 Offer 失败:', error)
                 }
@@ -399,7 +414,8 @@ onMounted(async () => {
                 }
                 
                 // 发送媒体流 Offer（为每个学生创建独立的连接）
-                if (localStream.value && signalService) {
+                // 检查是否有摄像头流或屏幕共享流
+                if ((localStream.value || screenStream.value) && signalService) {
                   try {
                     console.log('[TeacherRoom] 为学生创建 Offer:', data.userId)
                     // 获取或创建该学生的 RTCManager
@@ -410,10 +426,21 @@ onMounted(async () => {
                       studentManager.addLocalTracks(localStream.value)
                     }
                     
+                    // 如果有屏幕共享流，也添加
+                    if (screenStream.value) {
+                      screenStream.value.getTracks().forEach(track => {
+                        studentManager.addScreenTrack(track, screenStream.value!)
+                      })
+                    }
+                    
                     const offer = await studentManager.createOffer()
-                    // 摄像头流的 Offer，传入 'camera' 类型
-                    signalService.sendOffer(studentId, offer, 'camera')
-                    console.log('[TeacherRoom] 已向学生发送摄像头流的 Offer:', data.userId)
+                    // 根据当前状态决定 streamType：如果有屏幕共享，使用 'screen'，否则使用 'camera'
+                    const streamType = screenStream.value ? 'screen' : 'camera'
+                    signalService.sendOffer(studentId, offer, streamType)
+                    console.log(`[TeacherRoom] 已向学生发送${streamType}流的 Offer:`, data.userId, {
+                      hasCamera: !!localStream.value,
+                      hasScreen: !!screenStream.value
+                    })
                   } catch (error) {
                     console.error('[TeacherRoom] 创建 Offer 失败:', error)
                   }

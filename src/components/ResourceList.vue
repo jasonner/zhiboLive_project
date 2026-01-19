@@ -7,7 +7,6 @@
         class="resource-item"
       >
         <div class="resource-info">
-          <div class="resource-category">{{ resource.category }}</div>
           <div class="resource-details">
             <div class="resource-name" :title="resource.name">{{ resource.name }}</div>
             <div class="resource-type">

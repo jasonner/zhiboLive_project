@@ -570,6 +570,7 @@ export class RTCManager {
   /**
    * 移除屏幕共享轨道
    * 停止屏幕共享时，从 PeerConnection 中移除屏幕共享发送器
+   * 重要：不要停止轨道，因为轨道可能是从外部流中直接引用的，停止它们会影响原始流
    */
   removeScreenTracks() {
     if (!this.peerConnection) return
@@ -588,10 +589,11 @@ export class RTCManager {
     screenTransceivers.forEach(transceiver => {
       try {
         const track = transceiver.sender.track
-        // 停止轨道
+        // 重要：不要停止轨道，因为轨道可能是从外部流中直接引用的
+        // 停止它们会影响原始流，导致屏幕共享被关闭
+        // 只从 PeerConnection 中移除 transceiver，不停止轨道
         if (track) {
-          track.stop()
-          console.log('[RTCManager] 已停止屏幕共享轨道:', track.label)
+          console.log('[RTCManager] 移除屏幕共享轨道（不停止）:', track.label)
           // 从 trackTypeMap 中移除
           this.trackTypeMap.delete(track.id)
         }
